@@ -277,7 +277,7 @@ class Player:
     def _max_sandtrap_ddist_ppf(self, conf:float):
         return self.max_sandtrap_ddist.ppf(1.0-conf)
 
-    def splash_zone(self, current_point: Tuple[float, float], target_point: Tuple[float, float], conf: float) -> np.array:
+    def splash_zone_within_polygon(self, current_point: Tuple[float, float], target_point: Tuple[float, float], conf: float) -> bool:
         if type(current_point) == Point2D:
             current_point = tuple(Point2D)
 
@@ -291,13 +291,27 @@ class Player:
         angle = np.arctan2(float(ty) - float(cy), float(tx) - float(cx))
         in_sandtrap = is_in_sand_trap(
             current_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
-        return splash_zone(float(distance), float(
+        splash_zone_poly_points = splash_zone(float(distance), float(
             angle), float(conf), self.skill, current_point, in_sandtrap)
-    
-    def splash_zone_within_polygon(self, splash_zone_poly_points: np.array) -> bool:
         return self.shapely_poly.contains(ShapelyPolygon(splash_zone_poly_points))
 
-    def splash_zone_within_sand(self, splash_zone_poly_points: np.array) -> bool:
+    def splash_zone_within_sand(self, current_point: Tuple[float, float], target_point: Tuple[float, float], conf: float) -> bool:
+        if type(current_point) == Point2D:
+            current_point = tuple(Point2D)
+
+        if type(target_point) == Point2D:
+            target_point = tuple(Point2D)
+
+        distance = np.linalg.norm(np.array(current_point).astype(
+            float) - np.array(target_point).astype(float))
+        cx, cy = current_point
+        tx, ty = target_point
+        angle = np.arctan2(float(ty) - float(cy), float(tx) - float(cx))
+        in_sandtrap = is_in_sand_trap(
+            current_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
+        splash_zone_poly_points = splash_zone(float(distance), float(
+            angle), float(conf), self.skill, current_point, in_sandtrap)
+
         for sand_trap in self.sand_trap_shapely_polys:
             if sand_trap.intersects(ShapelyPolygon(splash_zone_poly_points)):
                 return True
@@ -359,10 +373,9 @@ class Player:
                     points_checked += 1
 
                     sand_penalty = 0
-                    splash_zone = self.splash_zone(next_p, candidate_point, conf)
-                    if not self.splash_zone_within_polygon(splash_zone):
+                    if not self.splash_zone_within_polygon(next_p, candidate_point, conf):
                         continue
-                    if self.splash_zone_within_sand(splash_zone):
+                    if self.splash_zone_within_sand(next_p, candidate_point, conf):
                         sand_penalty = self.AVOID_SAND_PENALTY
 
                     goal_dist = goal_dists[i]
@@ -447,8 +460,7 @@ class Player:
                 max_offset = roll_distance
                 offset = 0
                 prev_target = target_point
-                splash_zone = self.splash_zone(tuple(current_point), target_point, confidence)
-                while offset < max_offset and self.splash_zone_within_polygon(splash_zone):
+                while offset < max_offset and self.splash_zone_within_polygon(tuple(current_point), target_point, confidence):
                     offset += 1
                     dist = original_dist - offset
                     prev_target = target_point
