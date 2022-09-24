@@ -43,7 +43,7 @@ def spread_points(current_point, angles: np.array, distance, reverse) -> np.arra
     return np.column_stack((xs, ys))
 
 
-def splash_zone(distance: float, angle: float, conf: float, skill: int, current_point: Tuple[float, float], in_sandtrap: bool) -> np.array:
+def splash_zone(distance: float, angle: float, conf: float, skill: int, current_point: Tuple[float, float], in_sandtrap: bool, target_in_sand: bool) -> np.array:
     conf_points = np.linspace(1 - conf, conf, 5)
     scale = 1.1
     if in_sandtrap:
@@ -58,10 +58,10 @@ def splash_zone(distance: float, angle: float, conf: float, skill: int, current_
         angles = np.vectorize(standard_ppf)(
             conf_points) * (1/(2*skill)) + angle
 
-    if distance <= 20 or in_sandtrap:
+    if distance <= 20 or target_in_sand:
         # If a ball lands in a sand trap, it does not roll
         scale = 1.0
-    if distance <= 20 and in_sandtrap:
+    if distance <= 20 and target_in_sand:
         # If you're in a sand trap and happen to be closer than 20m to the hole
         # the simulator does not make you use a putter
         scale = 1.1
@@ -69,7 +69,7 @@ def splash_zone(distance: float, angle: float, conf: float, skill: int, current_
     max_distance = distances[-1]*scale
     top_arc = spread_points(current_point, angles, max_distance, False)
 
-    if distance > 20 or (distance <= 20 and in_sandtrap):
+    if distance > 20 or (distance <= 20 and target_in_sand):
         min_distance = distances[0]
         bottom_arc = spread_points(current_point, angles, min_distance, True)
         return np.concatenate((top_arc, bottom_arc, np.array([top_arc[0]])))
@@ -286,13 +286,18 @@ class Player:
 
         distance = np.linalg.norm(np.array(current_point).astype(
             float) - np.array(target_point).astype(float))
+
         cx, cy = current_point
         tx, ty = target_point
         angle = np.arctan2(float(ty) - float(cy), float(tx) - float(cx))
         in_sandtrap = is_in_sand_trap(
             current_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
+
+        target_sandtrap = is_in_sand_trap(
+            target_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
+
         splash_zone_poly_points = splash_zone(float(distance), float(
-            angle), float(conf), self.skill, current_point, in_sandtrap)
+            angle), float(conf), self.skill, current_point, in_sandtrap, target_sandtrap)
 
         splash_in_poly = self.shapely_poly.contains(ShapelyPolygon(splash_zone_poly_points))
 
@@ -303,33 +308,6 @@ class Player:
                 splash_in_sand = True
 
         return [splash_in_poly, splash_in_sand]
-
-    '''
-    def splash_zone_within_sand(self, current_point: Tuple[float, float], target_point: Tuple[float, float], conf: float) -> bool:
-        if type(current_point) == Point2D:
-            current_point = tuple(Point2D)
-
-        if type(target_point) == Point2D:
-            target_point = tuple(Point2D)
-
-        distance = np.linalg.norm(np.array(current_point).astype(
-            float) - np.array(target_point).astype(float))
-        cx, cy = current_point
-        tx, ty = target_point
-        angle = np.arctan2(float(ty) - float(cy), float(tx) - float(cx))
-        in_sandtrap = is_in_sand_trap(
-            current_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
-        splash_zone_poly_points = splash_zone(float(distance), float(
-            angle), float(conf), self.skill, current_point, in_sandtrap)
-            
-            
-
-        for sand_trap in self.sand_trap_shapely_polys:
-            if sand_trap.intersects(ShapelyPolygon(splash_zone_poly_points)):
-                return True
-        return False
-    
-    '''
 
     def numpy_adjacent_and_dist(self, point: Tuple[float, float], conf: float, in_sandtrap: bool):
         cloc_distances = cdist(self.np_map_points, np.array(
@@ -387,21 +365,22 @@ class Player:
             else:
                 next_p_after_rolling = roll(next_sp.previous.point, next_p, constants.extra_roll)
 
-            #next_p_after_rolling = next_p if next_sp.previous is None else roll(next_sp.previous.point, next_p, constants.extra_roll)
-
             reachable_points, goal_dists = self.numpy_adjacent_and_dist(
                 next_p_after_rolling, conf, is_in_sand_trap(next_p_after_rolling, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap))
 
+
             for i in range(len(reachable_points)):
                 candidate_point = tuple(reachable_points[i])
+
                 if candidate_point not in best_cost or best_cost[candidate_point] > new_point.actual_cost:
                     points_checked += 1
 
                     sand_penalty = 0
                     splash_in_poly, splash_in_sand = self.splash_zone_within_polygon(next_p, candidate_point, conf)
+
                     if not splash_in_poly:
                         continue
-                    if splash_in_sand:
+                    if splash_in_sand and not is_in_sand_trap(candidate_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap):
                         sand_penalty = self.AVOID_SAND_PENALTY
 
                     goal_dist = goal_dists[i]
@@ -481,12 +460,13 @@ class Player:
             v = np.array(target_point) - current_point
             # Unit vector pointing from current to target
             u = v / original_dist
-            if original_dist >= 20.0:
+            if original_dist >= 20.0 or (original_dist < 20 and is_in_sand_trap(
+            tuple(current_point), self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)):
                 roll_distance = original_dist / 20
                 max_offset = roll_distance
                 offset = 0
                 prev_target = target_point
-                while offset < max_offset and self.splash_zone_within_polygon(tuple(current_point), target_point, confidence)[0]:
+                while offset < max_offset and self.splash_zone_within_polygon(tuple(current_point), tuple(target_point), confidence)[0]:
                     offset += 1
                     dist = original_dist - offset
                     prev_target = target_point
