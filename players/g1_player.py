@@ -277,7 +277,7 @@ class Player:
     def _max_sandtrap_ddist_ppf(self, conf:float):
         return self.max_sandtrap_ddist.ppf(1.0-conf)
 
-    def splash_zone_within_polygon(self, current_point: Tuple[float, float], target_point: Tuple[float, float], conf: float) -> bool:
+    def splash_zone_within_polygon(self, current_point: Tuple[float, float], target_point: Tuple[float, float], conf: float) -> [bool, bool]:
         if type(current_point) == Point2D:
             current_point = tuple(Point2D)
 
@@ -293,8 +293,18 @@ class Player:
             current_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
         splash_zone_poly_points = splash_zone(float(distance), float(
             angle), float(conf), self.skill, current_point, in_sandtrap)
-        return self.shapely_poly.contains(ShapelyPolygon(splash_zone_poly_points))
 
+        splash_in_poly = self.shapely_poly.contains(ShapelyPolygon(splash_zone_poly_points))
+
+        splash_in_sand = False
+
+        for sand_trap in self.sand_trap_shapely_polys:
+            if sand_trap.intersects(ShapelyPolygon(splash_zone_poly_points)):
+                splash_in_sand = True
+
+        return [splash_in_poly, splash_in_sand]
+
+    '''
     def splash_zone_within_sand(self, current_point: Tuple[float, float], target_point: Tuple[float, float], conf: float) -> bool:
         if type(current_point) == Point2D:
             current_point = tuple(Point2D)
@@ -311,11 +321,15 @@ class Player:
             current_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
         splash_zone_poly_points = splash_zone(float(distance), float(
             angle), float(conf), self.skill, current_point, in_sandtrap)
+            
+            
 
         for sand_trap in self.sand_trap_shapely_polys:
             if sand_trap.intersects(ShapelyPolygon(splash_zone_poly_points)):
                 return True
         return False
+    
+    '''
 
     def numpy_adjacent_and_dist(self, point: Tuple[float, float], conf: float, in_sandtrap: bool):
         cloc_distances = cdist(self.np_map_points, np.array(
@@ -373,9 +387,10 @@ class Player:
                     points_checked += 1
 
                     sand_penalty = 0
-                    if not self.splash_zone_within_polygon(next_p, candidate_point, conf):
+                    splash_in_poly, splash_in_sand = self.splash_zone_within_polygon(next_p, candidate_point, conf)
+                    if not splash_in_poly:
                         continue
-                    if self.splash_zone_within_sand(next_p, candidate_point, conf):
+                    if splash_in_sand:
                         sand_penalty = self.AVOID_SAND_PENALTY
 
                     goal_dist = goal_dists[i]
@@ -460,7 +475,7 @@ class Player:
                 max_offset = roll_distance
                 offset = 0
                 prev_target = target_point
-                while offset < max_offset and self.splash_zone_within_polygon(tuple(current_point), target_point, confidence):
+                while offset < max_offset and self.splash_zone_within_polygon(tuple(current_point), target_point, confidence)[0]:
                     offset += 1
                     dist = original_dist - offset
                     prev_target = target_point
