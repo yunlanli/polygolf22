@@ -377,7 +377,18 @@ class Player:
                 return next_sp.point
 
             # Add adjacent points to heap
-            next_p_after_rolling = next_p if next_sp.previous is None else roll(next_sp.previous.point, next_p, constants.extra_roll)
+            if next_sp.previous is None:
+                next_p_after_rolling = next_p
+            elif is_in_sand_trap(next_p, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap):
+                next_p_after_rolling = next_p
+            elif np.linalg.norm(np.array(self.goal) - np.array(next_sp.previous.point)) < 20:
+                if not is_in_sand_trap(next_sp.previous.point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap):
+                    next_p_after_rolling = next_p
+            else:
+                next_p_after_rolling = roll(next_sp.previous.point, next_p, constants.extra_roll)
+
+            #next_p_after_rolling = next_p if next_sp.previous is None else roll(next_sp.previous.point, next_p, constants.extra_roll)
+
             reachable_points, goal_dists = self.numpy_adjacent_and_dist(
                 next_p_after_rolling, conf, is_in_sand_trap(next_p_after_rolling, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap))
 
