@@ -69,13 +69,17 @@ def splash_zone(distance: float, angle: float, conf: float, skill: int, current_
     max_distance = distances[-1]*scale
     top_arc = spread_points(current_point, angles, max_distance, False)
 
-    if distance > 20 or (distance <= 20 and in_sandtrap):
+    putter_shot = distance < 20 and not in_sandtrap
+    if putter_shot:
+        # return a fan region, instead of splash zone, this is so that we can
+        # check whether the putter shot would pass by water 
+        current_point = np.array([current_point])
+        return np.concatenate((current_point, top_arc, current_point))
+    else:
         min_distance = distances[0]
         bottom_arc = spread_points(current_point, angles, min_distance, True)
         return np.concatenate((top_arc, bottom_arc, np.array([top_arc[0]])))
 
-    current_point = np.array([current_point])
-    return np.concatenate((current_point, top_arc, current_point))
 
 
 def poly_to_points(poly: Polygon) -> Iterator[Tuple[float, float]]:
