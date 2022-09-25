@@ -45,7 +45,6 @@ def spread_points(current_point, angles: np.array, distance, reverse) -> np.arra
 
 def splash_zone(distance: float, angle: float, conf: float, skill: int, current_point: Tuple[float, float], in_sandtrap: bool, target_in_sand: bool) -> np.array:
     conf_points = np.linspace(1 - conf, conf, 5)
-    scale = 1.1
     if in_sandtrap:
         # the distance rating is halved, and the standard deviations for the angle and distance distributions are doubled
         distances = np.vectorize(standard_ppf)(
@@ -58,18 +57,18 @@ def splash_zone(distance: float, angle: float, conf: float, skill: int, current_
         angles = np.vectorize(standard_ppf)(
             conf_points) * (1/(2*skill)) + angle
 
-    if distance <= 20 or target_in_sand:
-        # If a ball lands in a sand trap, it does not roll
+    scale = 1.1
+    putter_shot = distance < 20 and not in_sandtrap
+
+    # A ball will not roll in two cases:
+    #   1. player makes a putter shot
+    # . 2. ball lands in a sand trap
+    if putter_shot or target_in_sand:
         scale = 1.0
-    if distance <= 20 and target_in_sand:
-        # If you're in a sand trap and happen to be closer than 20m to the hole
-        # the simulator does not make you use a putter
-        scale = 1.1
 
     max_distance = distances[-1]*scale
     top_arc = spread_points(current_point, angles, max_distance, False)
 
-    putter_shot = distance < 20 and not in_sandtrap
     if putter_shot:
         # return a fan region, instead of splash zone, this is so that we can
         # check whether the putter shot would pass by water 
