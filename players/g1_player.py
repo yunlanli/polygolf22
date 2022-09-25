@@ -302,10 +302,10 @@ class Player:
         splash_in_poly = self.shapely_poly.contains(ShapelyPolygon(splash_zone_poly_points))
 
         splash_in_sand = False
-
         for sand_trap in self.sand_trap_shapely_polys:
             if sand_trap.intersects(ShapelyPolygon(splash_zone_poly_points)):
                 splash_in_sand = True
+                break
 
         return [splash_in_poly, splash_in_sand]
 
