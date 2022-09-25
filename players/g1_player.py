@@ -112,7 +112,7 @@ def sympy_poly_to_mpl(sympy_poly: Polygon) -> Path:
 
 def sympy_poly_to_shapely(sympy_poly: Polygon) -> ShapelyPolygon:
     """Helper function to convert sympy Polygon to shapely Polygon object"""
-    v = sympy_poly.vertices
+    v = list(sympy_poly.vertices)
     v.append(v[0])
     return ShapelyPolygon(v)
 
@@ -355,13 +355,19 @@ class Player:
                 return next_sp.point
 
             # Add adjacent points to heap
+            shot_distance = 0 if next_sp.previous is None else np.linalg.norm(np.array(next_p) - np.array(next_sp.previous.point))
+            start_point_in_sand = False if next_sp.previous is None else is_in_sand_trap(next_sp.previous.point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
+            target_point_in_sand = is_in_sand_trap(next_p, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
+
             if next_sp.previous is None:
+                # target point is the starting point, no rolling
                 next_p_after_rolling = next_p
-            elif is_in_sand_trap(next_p, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap):
+            elif target_point_in_sand:
+                # target point is in a sand trap, no rolling
                 next_p_after_rolling = next_p
-            elif np.linalg.norm(np.array(self.goal) - np.array(next_sp.previous.point)) < 20:
-                if not is_in_sand_trap(next_sp.previous.point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap):
-                    next_p_after_rolling = next_p
+            elif not start_point_in_sand and shot_distance < 20:
+                # putter shot, no rolling
+                next_p_after_rolling = next_p
             else:
                 next_p_after_rolling = roll(next_sp.previous.point, next_p, constants.extra_roll)
 
@@ -460,8 +466,7 @@ class Player:
             v = np.array(target_point) - current_point
             # Unit vector pointing from current to target
             u = v / original_dist
-            if original_dist >= 20.0 or (original_dist < 20 and is_in_sand_trap(
-            tuple(current_point), self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)):
+            if original_dist >= 20.0 or is_in_sand_trap(tuple(current_point), self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap):
                 roll_distance = original_dist / 20
                 max_offset = roll_distance
                 offset = 0
