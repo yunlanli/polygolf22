@@ -213,6 +213,7 @@ class ScoredPoint:
 
 class Player:
     AVOID_SAND_PENALTY = 0.1
+    PUTTER_OVER_SAND_PENALTY = 1
 
     def __init__(self, skill: int, rng: np.random.Generator, logger: logging.Logger, golf_map: sympy.Polygon, start: sympy.geometry.Point2D, target: sympy.geometry.Point2D, sand_traps: List[sympy.Polygon], map_path: str, precomp_dir: str) -> None:
         """Initialise the player with given skill.
@@ -309,6 +310,9 @@ class Player:
                 splash_in_sand = True
                 break
 
+        if target_point == (26.0, 5,0):
+            print(f"[ splash_zone_within_polygon ] (26.0, 5.0) -> splash_in_poly: {splash_in_poly}, splash_in_sand: {splash_in_sand}")
+
         return [splash_in_poly, splash_in_sand]
 
     def numpy_adjacent_and_dist(self, point: Tuple[float, float], conf: float, in_sandtrap: bool):
@@ -354,6 +358,8 @@ class Player:
                 #  reduce the conf and try again for a shorter path.
                 while next_sp.previous.point != start_point:
                     next_sp = next_sp.previous
+                
+                print(f"[ DEBUG ] {'start' if next_sp.previous is None else str(next_sp.previous.point)} -> aim: {next_sp.point}, actual cost: {next_sp.actual_cost}, f_cost: {next_sp.f_cost}, h_cost: {next_sp.h_cost}")
                 return next_sp.point
 
             # Add adjacent points to heap
@@ -378,7 +384,12 @@ class Player:
 
 
             for i in range(len(reachable_points)):
+                # shooting from @next_p -> @candidate_point
                 candidate_point = tuple(reachable_points[i])
+                shot_distance = np.linalg.norm(np.array(candidate_point) - np.array(next_p))
+                start_point_in_sand = is_in_sand_trap(next_p, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap)
+                putter_shot = shot_distance < 20 and not start_point_in_sand
+                new_actual_cost = actual_cost
 
                 if candidate_point not in best_cost or best_cost[candidate_point] > new_point.actual_cost:
                     points_checked += 1
@@ -390,9 +401,11 @@ class Player:
                         continue
                     if splash_in_sand and not is_in_sand_trap(candidate_point, self.sand_trap_matlab_polys, cache=self.map_points_in_sand_trap):
                         sand_penalty = self.AVOID_SAND_PENALTY
+                    if splash_in_sand and putter_shot:
+                        new_actual_cost += self.PUTTER_OVER_SAND_PENALTY
 
                     goal_dist = goal_dists[i]
-                    new_point = ScoredPoint(candidate_point, point_goal, actual_cost + 1, next_sp,
+                    new_point = ScoredPoint(candidate_point, point_goal, new_actual_cost + 1, next_sp,
                                             goal_dist=goal_dist, skill=self.skill, sand_penalty=sand_penalty)
 
                     best_cost[new_point.point] = new_point.actual_cost
