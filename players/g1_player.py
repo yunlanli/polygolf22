@@ -310,9 +310,6 @@ class Player:
                 splash_in_sand = True
                 break
 
-        if target_point == (26.0, 5,0):
-            print(f"[ splash_zone_within_polygon ] (26.0, 5.0) -> splash_in_poly: {splash_in_poly}, splash_in_sand: {splash_in_sand}")
-
         return [splash_in_poly, splash_in_sand]
 
     def numpy_adjacent_and_dist(self, point: Tuple[float, float], conf: float, in_sandtrap: bool):
@@ -358,8 +355,6 @@ class Player:
                 #  reduce the conf and try again for a shorter path.
                 while next_sp.previous.point != start_point:
                     next_sp = next_sp.previous
-                
-                print(f"[ DEBUG ] {'start' if next_sp.previous is None else str(next_sp.previous.point)} -> aim: {next_sp.point}, actual cost: {next_sp.actual_cost}, f_cost: {next_sp.f_cost}, h_cost: {next_sp.h_cost}")
                 return next_sp.point
 
             # Add adjacent points to heap
