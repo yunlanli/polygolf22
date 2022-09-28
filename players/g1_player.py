@@ -57,16 +57,8 @@ def splash_zone(distance: float, angle: float, conf: float, skill: int, current_
         angles = np.vectorize(standard_ppf)(
             conf_points) * (1/(2*skill)) + angle
 
-    scale = 1.1
     putter_shot = distance < 20 and not in_sandtrap
-
-    # A ball will not roll in two cases:
-    #   1. player makes a putter shot
-    # . 2. ball lands in a sand trap
-    if putter_shot or target_in_sand:
-        scale = 1.0
-
-    max_distance = distances[-1]*scale
+    max_distance = distances[-1]
     top_arc = spread_points(current_point, angles, max_distance, False)
 
     if putter_shot:
@@ -77,6 +69,11 @@ def splash_zone(distance: float, angle: float, conf: float, skill: int, current_
     else:
         min_distance = distances[0]
         bottom_arc = spread_points(current_point, angles, min_distance, True)
+        
+        if not target_in_sand:
+            top_arc = np.array([roll(current_point, tuple(target), constants.extra_roll) for target in top_arc])
+            bottom_arc = np.array([roll(current_point, tuple(target), constants.extra_roll) for target in bottom_arc])
+
         return np.concatenate((top_arc, bottom_arc, np.array([top_arc[0]])))
 
 
