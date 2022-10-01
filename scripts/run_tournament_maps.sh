@@ -3,7 +3,19 @@
 base_dir="g1_results"
 
 # generate results directory
-for map in "g4/n" "g3/baseball";
+for map in	"g3/g3_tournament"			\
+			"2021_maps/g2/spider_par6"	\
+			"g4/jump"					\
+			"g8/risk_map" 				\
+			"g1/tournament"				\
+			"g4/n"						\
+			"g7/g7_final"				\
+			"g4/chevuoi"				\
+			"2021_maps/g7/complex2"		\
+			"g2/mwc_swirly"				\
+			"g5/tourney"				\
+			"default/checkers2"			\
+			"g9/rhino_karma";
 do
 	suffix=`echo $map | sed s@/@_@g`
 
