@@ -18,8 +18,8 @@ from sympy.geometry import Polygon, Point2D
 from matplotlib.path import Path
 from shapely.geometry import Polygon as ShapelyPolygon, Point as ShapelyPoint
 from scipy.spatial.distance import cdist
-from faiss import Kmeans
-from polylabel import polylabel
+#from faiss import Kmeans
+#from polylabel import polylabel
 
 
 POINT_SPACING = 1
