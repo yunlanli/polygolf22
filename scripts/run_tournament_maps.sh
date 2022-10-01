@@ -15,21 +15,19 @@ seed_entropy="206877182951751619128817595840757235598"
 
 
 # run group 1 player on each map
-for map in	"g4/n"					\
-			"g4/jump"				\
-			"g8/risk_map" 			\
-			"g3/g3_tournament"		\
-			"g3/baseball"			\
-			"g2/mwc_swirly"			\
-			"g4/chevuoi"			\
-			"g9/rhino_karma"		\
-			"g2/tournament"			\
-			"g1/tournament"			\
-			"g5/tourney"			\
-			"g7/g7_final"			\
-			"default/checkers2"		\
-			"2021_maps/g7/complex2"	\
-			"2021_maps/g2/spider_par6";
+for map in	"g3/g3_tournament"			\
+			"2021_maps/g2/spider_par6"	\
+			"g4/jump"					\
+			"g8/risk_map" 				\
+			"g1/tournament"				\
+			"g4/n"						\
+			"g7/g7_final"				\
+			"g4/chevuoi"				\
+			"2021_maps/g7/complex2"		\
+			"g2/mwc_swirly"				\
+			"g5/tourney"				\
+			"default/checkers2"			\
+			"g9/rhino_karma";
 do
 	suffix=`echo $map | sed s@/@_@g`
 	python_fn="tournament_rerun_$suffix.py"

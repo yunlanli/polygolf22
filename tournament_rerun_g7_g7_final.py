@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     # ---------------------------------------------------------------------------
     # TODO: modify the skill level to run our player on for this specific map
-    SKILLS = [50, 100]  
+    SKILLS = [10]  
     # ---------------------------------------------------------------------------
 
     TRIALS = args.trials
