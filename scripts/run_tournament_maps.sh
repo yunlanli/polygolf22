@@ -33,6 +33,6 @@ do
 	python_fn="tournament_rerun_$suffix.py"
 
 	echo "running player 1 on map \"$map\" using python file \"$python_fn\"..."
-	python "tournament_rerun_$suffix.py" --result_dir "$base_dir/$suffix" -s $seed_entropy -t 1 -v
+	python "tournament_rerun_$suffix.py" --result_dir "$base_dir/$suffix" -s $seed_entropy -v
 	echo
 done
