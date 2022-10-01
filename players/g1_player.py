@@ -1,5 +1,4 @@
 import os
-import pickle
 import numpy as np
 import functools
 import sympy
@@ -272,27 +271,19 @@ class Player:
             self.conf = 0.75
 
         # precomputation
-        precomp_path = os.path.join(precomp_dir, f"{map_path}.pkl")
-        if os.path.isfile(precomp_path):
-            with open(precomp_path, "rb") as f:
-                self.map_points_in_sand_trap, self.np_map_points, self.np_goal_dist = pickle.load(f)
-        else:
-            np_map_points = [self.goal]  # storing the points as numpy array
-            pp = list(poly_to_points(golf_map))
+        np_map_points = [self.goal]  # storing the points as numpy array
+        pp = list(poly_to_points(golf_map))
 
-            for point in pp:
-                # use matplotlib here because it's faster than shapely for this calculation...
-                if self.mpl_poly.contains_point(point):
-                    x, y = point
-                    np_map_points.append(np.array([x, y]))
+        for point in pp:
+            # use matplotlib here because it's faster than shapely for this calculation...
+            if self.mpl_poly.contains_point(point):
+                x, y = point
+                np_map_points.append(np.array([x, y]))
 
-            # save state
-            self.map_points_in_sand_trap = find_map_points_in_sand_trap(pp, self.sand_trap_matlab_polys)
-            self.np_map_points = np.array(np_map_points)
-            self.np_goal_dist = cdist(self.np_map_points, np.array([np.array(self.goal)]), 'euclidean').flatten()
-
-            with open(precomp_path, 'wb') as f:
-                pickle.dump([self.map_points_in_sand_trap, self.np_map_points, self.np_goal_dist], f)
+        # save state
+        self.map_points_in_sand_trap = find_map_points_in_sand_trap(pp, self.sand_trap_matlab_polys)
+        self.np_map_points = np.array(np_map_points)
+        self.np_goal_dist = cdist(self.np_map_points, np.array([np.array(self.goal)]), 'euclidean').flatten()
 
     @functools.lru_cache()
     def _max_ddist_ppf(self, conf: float):
