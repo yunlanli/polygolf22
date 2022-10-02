@@ -20,7 +20,7 @@ This folder stores the ipython notebooks that analyzes the tournament results an
 
 3. step 3: transform the values in `tournament_results.csv` into appropriate data types for analysis
 
-Simply open the ipython notebook `notebooks/format_tournament_results.ipynb` and run it. Once it completes, you should see a file named `tournament_results_short_formatted.csv` in the folder `notebooks/data/cleaned`.
+	Simply open the ipython notebook `notebooks/format_tournament_results.ipynb` and run it. Once it completes, you should see a file named `tournament_results_short_formatted.csv` in the folder `notebooks/data/cleaned`.
 
 4. last step: run `notebooks/tournament_result_analysis.ipynb` to analyze the data and generate graphs for the report
 
