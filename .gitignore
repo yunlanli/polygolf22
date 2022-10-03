@@ -154,3 +154,7 @@ precomp/
 
 # Dummy map
 maps/g9/simpleMap.json
+
+# Tournament Results Analysis
+*.csv
+*.png
