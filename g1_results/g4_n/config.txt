@@ -1,0 +1,6 @@
+Seed entropy 206877182951751619128817595840757235598
+Players ['1']
+Skills [10, 25, 50, 100]
+Trials 5
+Maps
+['maps/g4/n.json']
